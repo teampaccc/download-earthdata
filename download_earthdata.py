@@ -3,6 +3,9 @@ import earthaccess
 import argparse
 import os
 
+# example command for LA fires to run this script:
+# python3 download_earthdata.py --short_name "S5P_L2__NO2____HiR" --start "2025-01-06" --end "2025-01-08" --bounding_box "(-120,32,-116,36)" --output_dir "/home/jpalmo/fs09/Datasets/TROPOMI/L2/NO2/"
+
 # Create an ArgumentParser object
 parser = argparse.ArgumentParser(description='Download earthdata to output_dir using short_name, start, end, and bounding_box.')
 
@@ -19,7 +22,7 @@ parser = argparse.ArgumentParser(description='Download earthdata to output_dir u
 parser.add_argument('--short_name', type=str, help='Short name of the data -- search the CMR for this')
 parser.add_argument('--start', type=str, help='Start date (YYYY-MM-DD)')
 parser.add_argument('--end', type=str, help='End date (YYYY-MM-DD)')
-parser.add_argument('--bounding_box', default=(-134,20,-45,60), help='Bounding box')
+parser.add_argument('--bounding_box', default="(-134,20,-45,60)", help='Bounding box')
 parser.add_argument('--output_dir', type=str, help='Output directory')
 
 # Parse the command line arguments
@@ -32,6 +35,13 @@ end = args.end
 bounding_box = args.bounding_box
 output_dir = args.output_dir
 
+# parse bounding box
+bounding_box = tuple(map(float, bounding_box.strip('()').split(',')))
+lower_left_lon = bounding_box[0]
+lower_left_lat = bounding_box[1]
+upper_right_lon = bounding_box[2]
+upper_right_lat = bounding_box[3]
+
 # code to download data using the provided arguments
 
 # Log in to Earthdata
@@ -40,9 +50,13 @@ earthaccess.login()
 # Search for data
 results = earthaccess.search_data(
     short_name=short_name,
-    # bounding_box=bounding_box,
+    bounding_box=bounding_box,
     temporal=(start, end),
 )
+
+if len(results) == 0:
+    print('No files found matching search criteria. Exiting.')
+    exit()
 
 # Check if output_dir exists; if not, create it
 if not os.path.exists(output_dir):
